@@ -27,6 +27,12 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 
 /**
  * If This Than Java (IFTTT for Java)
@@ -35,6 +41,8 @@ import java.util.stream.Collectors;
  */
 public class IFTTJ {
 
+    public static final String IFTTT_TRIGGER_ENDPOINT = "https://maker.ifttt.com/trigger/%s/with/key/%s";
+    public static String KEY = null;
     public static final String INET_ADDRESS_OUT = getOutInetAddress();
     public static String URL_SUFFIX = "requests";
     private static Server SERVER;
@@ -92,7 +100,7 @@ public class IFTTJ {
         System.out.println("You can stop the server by typing 'stop' or 'shutdown'.");
         System.out.println("You can start the server by typing 'start' or 'boot'.");
         System.out.println("You can restart the server by typing 'restart' or 'reboot'.");
-        System.out.println("You can exit toggle the debug mode by typing 'd', 'debug'");
+        System.out.println("You can exit toggle the debug mode by typing 'd' or 'debug'");
         System.out.println("You can exit the program by typing 'q', 'quit' or 'exit'");
         System.out.println("-------------------------------------------------------------------------------------------------------------------------------------------");
         SERVER = new Server(port);
@@ -203,6 +211,30 @@ public class IFTTJ {
             }
 
         };
+    }
+
+    public static final boolean trigger(String event, Object... values) {
+        try {
+            final CloseableHttpClient client = HttpClients.createDefault();
+            final HttpPost post = new HttpPost(String.format(IFTTT_TRIGGER_ENDPOINT, event, KEY));
+            final StringEntity entity = new StringEntity(toJSON(values));
+            System.out.println("VALUES: " + toJSON(values));
+            post.setEntity(entity);
+            post.setHeader("Accept", "application/json");
+            post.setHeader("Content-type", "application/json");
+            final CloseableHttpResponse response = client.execute(post);
+            final int responseCode = response.getStatusLine().getStatusCode();
+            response.close();
+            client.close();
+            return responseCode == 200;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return false;
+        }
+    }
+
+    private static final String toJSON(Object... values) {
+        return IntStream.range(0, values.length).boxed().collect(Collectors.toMap((i) -> "value" + (i + 1), (i) -> values[i])).entrySet().stream().map((entry) -> "\"" + entry.getKey() + "\":\"" + entry.getValue() + "\"").collect(Collectors.joining(",", "{", "}"));
     }
 
 }

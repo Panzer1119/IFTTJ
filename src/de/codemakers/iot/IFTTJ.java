@@ -17,13 +17,13 @@ package de.codemakers.iot;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
 import java.net.URL;
 import java.util.AbstractMap;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -43,15 +43,17 @@ public class IFTTJ {
 
     public static final String IFTTT_TRIGGER_ENDPOINT = "https://maker.ifttt.com/trigger/%s/with/key/%s";
     public static String KEY = null;
+    public static long MAX_EVENT_TIME = 5000;
+    public static long MAX_CLIENT_AFK_TIME = 60000;
     public static final String INET_ADDRESS_OUT = getOutInetAddress();
     public static String URL_SUFFIX = "requests";
     private static Server SERVER;
+    private static final Map.Entry<Long, String> EMPTY_EVENT = new AbstractMap.SimpleEntry<>(0L, null);
     public static final String IFTTT_APPLET_REGEX = "IFTTT_APPLET_([A-Za-z0-9]+)(?: (.*))?";
     public static final Pattern IFTTT_APPLET_REGEX_PATTERN = Pattern.compile(IFTTT_APPLET_REGEX);
     public static final String IFTTJ_GET_EVENTS_PREFIX = "IFTTJ_GET_EVENTS_";
-    public static final String IFTTJ_DELETE_EVENTS_PREFIX = "IFTTJ_DELETE_EVENTS_";
-    public static final String IFTTJ_GRAB_EVENT_PREFIX = "IFTTJ_GRAB_EVENT_";
-    public static final Map<String, Queue<String>> EVENTS = new ConcurrentHashMap<>();
+    public static final Map<String, LinkedList<Map.Entry<Long, String>>> EVENTS = new ConcurrentHashMap<>();
+    public static final Map<InetSocketAddress, Long> CLIENTS_LAST_UPDATE_TIMES = new ConcurrentHashMap<>();
     private static boolean DEBUG = false;
 
     /**
@@ -67,7 +69,7 @@ public class IFTTJ {
             return;
         }
         int port = 8080;
-        int maxSize = 10;
+        int maxSize = 100;
         if (args != null && args.length > 0) {
             for (String temp : args) {
                 try {
@@ -114,33 +116,33 @@ public class IFTTJ {
         SERVER.setHandler((inetSocketAddress, input) -> {
             int responseCode = 200;
             String output = input;
-            if (input.startsWith(IFTTJ_GET_EVENTS_PREFIX)) {
-                final Queue queue = EVENTS.get(input.substring(IFTTJ_GET_EVENTS_PREFIX.length()));
-                output = "" + queue;
-            } else if (input.startsWith(IFTTJ_DELETE_EVENTS_PREFIX)) {
-                final String id = input.substring(IFTTJ_DELETE_EVENTS_PREFIX.length());
-                final Queue queue = EVENTS.get(id);
-                if (queue != null) {
-                    queue.clear();
-                    EVENTS.remove(id);
-                }
-                output = String.format("DELETED_EVENTS_%s", id);
-            } else if (input.startsWith(IFTTJ_GRAB_EVENT_PREFIX)) {
-                final Queue queue = EVENTS.get(input.substring(IFTTJ_GRAB_EVENT_PREFIX.length()));
-                output = queue == null ? null : "" + queue.poll();
-            } else {
-                final Matcher matcher = IFTTT_APPLET_REGEX_PATTERN.matcher(input);
-                if (matcher.find()) {
-                    final String id = matcher.group(1);
-                    final String data = matcher.group(2);
-                    EVENTS.computeIfAbsent(id, (key) -> newQueue(maxSize)).add(data);
+            final long now = System.currentTimeMillis();
+            try {
+                if (input.startsWith(IFTTJ_GET_EVENTS_PREFIX)) {
+                    final LinkedList<Map.Entry<Long, String>> events = EVENTS.get(input.substring(IFTTJ_GET_EVENTS_PREFIX.length()));
+                    if (events != null) {
+                        clearOldData(events, now);
+                        output = getEvent(events, CLIENTS_LAST_UPDATE_TIMES.get(inetSocketAddress)).getValue();
+                    } else {
+                        output = null;
+                    }
+                    CLIENTS_LAST_UPDATE_TIMES.put(inetSocketAddress, now);
                 } else {
-                    responseCode = 404;
-                    output = "Not recognized any commands!";
+                    final Matcher matcher = IFTTT_APPLET_REGEX_PATTERN.matcher(input);
+                    if (matcher.find()) {
+                        final String id = matcher.group(1);
+                        final String data = matcher.group(2);
+                        EVENTS.computeIfAbsent(id, (key) -> newLinkedList(maxSize)).add(new AbstractMap.SimpleEntry<>(now, data));
+                    } else {
+                        responseCode = 404;
+                        output = "Not recognized any commands!";
+                    }
                 }
-            }
-            if (DEBUG) {
-                System.out.println(String.format("[SERVER] Request from '%s': \"%s\", response: \"%s\"", inetSocketAddress.getAddress(), input, output));
+                if (DEBUG) {
+                    System.out.println(String.format("[SERVER] Request from '%s': \"%s\", response: \"%s\"", inetSocketAddress.getAddress(), input, output));
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
             }
             return new AbstractMap.SimpleEntry<>(responseCode, output);
         });
@@ -193,11 +195,20 @@ public class IFTTJ {
         return null;
     }
 
-    private static final <T> Queue<T> newQueue(final int maxSize) {
-        return new ConcurrentLinkedQueue<T>() {
+    private static final Map.Entry<Long, String> getEvent(LinkedList<Map.Entry<Long, String>> events, long lastUpdateTime) {
+        return events.stream().filter((event) -> event.getKey() > lastUpdateTime).findFirst().orElse(EMPTY_EVENT);
+    }
+
+    private static final void clearOldData(LinkedList<Map.Entry<Long, String>> events, long now) {
+        events.removeIf((event) -> (now - event.getKey()) >= MAX_EVENT_TIME);
+        CLIENTS_LAST_UPDATE_TIMES.entrySet().removeIf((entry) -> (now - entry.getValue()) >= MAX_CLIENT_AFK_TIME);
+    }
+
+    private static final LinkedList<Map.Entry<Long, String>> newLinkedList(final int maxSize) {
+        return new LinkedList<Map.Entry<Long, String>>() {
 
             @Override
-            public final boolean addAll(Collection<? extends T> c) {
+            public final boolean addAll(Collection<? extends Map.Entry<Long, String>> c) {
                 if (c != null) {
                     c.forEach(this::add);
                 }
@@ -205,7 +216,7 @@ public class IFTTJ {
             }
 
             @Override
-            public final boolean add(T e) {
+            public final boolean add(Map.Entry<Long, String> e) {
                 if (size() >= maxSize) {
                     remove();
                 }

@@ -211,7 +211,7 @@ public class Client {
         try {
             final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("POST");
-            final String request = IFTTJ.IFTTJ_GRAB_EVENT_PREFIX + id;
+            final String request = IFTTJ.IFTTJ_GET_EVENTS_PREFIX + id;
             connection.setDoOutput(true);
             final DataOutputStream dos = new DataOutputStream(connection.getOutputStream());
             dos.writeBytes(request);

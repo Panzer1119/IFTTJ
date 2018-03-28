@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
 /**
- * Client
+ * IFTTJ Client
  *
  * @author Paul Hagedorn (Panzer1119)
  */
@@ -43,10 +43,23 @@ public class Client {
     private BiConsumer<String, String> handler = null;
     private final Map<String, BiConsumer<String, String>> handlers = new ConcurrentHashMap<>();
 
+    /**
+     * Constructs a new Server for IFTTT POSTs and IFTTJ Clients
+     *
+     * @param ip IP Address to connect to
+     * @param port Port to connect to
+     */
     public Client(String ip, int port) {
         this(ip, port, IFTTJ.URL_SUFFIX);
     }
 
+    /**
+     * Constructs a new Server for IFTTT POSTs and IFTTJ Clients
+     *
+     * @param ip IP Address to connect to
+     * @param port Port to connect to
+     * @param url_suffix URL suffix after "http://ip:port/"
+     */
     public Client(String ip, int port, String url_suffix) {
         this.ip = ip;
         this.port = port;
@@ -54,36 +67,74 @@ public class Client {
         update();
     }
 
+    /**
+     * Returns the IP Address to connect to
+     *
+     * @return IP Address
+     */
     public final String getIP() {
         return ip;
     }
 
+    /**
+     * Sets the IP Address to connect to
+     *
+     * @param ip IP Address
+     * @return A reference to this Client
+     */
     public final Client setIP(String ip) {
         this.ip = ip;
         update();
         return this;
     }
 
+    /**
+     * Returns the Port to connect to
+     *
+     * @return Port
+     */
     public final int getPort() {
         return port;
     }
 
+    /**
+     * Sets the Port to connect to
+     *
+     * @param port Port
+     * @return A reference to this Client
+     */
     public final Client setPort(int port) {
         this.port = port;
         update();
         return this;
     }
 
+    /**
+     * Returns the URL Suffix after "http://ip:port/"
+     *
+     * @return URL suffix
+     */
     public final String getURLSuffix() {
         return url_suffix;
     }
 
+    /**
+     * Sets the URL Suffix after "http://ip:port/"
+     *
+     * @param url_suffix URL suffix
+     * @return A reference to this Client
+     */
     public final Client setURLSuffix(String url_suffix) {
         this.url_suffix = url_suffix;
         update();
         return this;
     }
 
+    /**
+     * Returns the URL Object
+     *
+     * @return URL
+     */
     public final URL getURL() {
         return url;
     }
@@ -96,28 +147,66 @@ public class Client {
         }
     }
 
+    /**
+     * Returns the handler, which handles every event coming from IFTTT
+     *
+     * @return Main handler
+     */
     public final BiConsumer<String, String> getHandler() {
         return handler;
     }
 
+    /**
+     * Sets the handler, which handles every event coming from IFTTT
+     *
+     * @param handler Main handler
+     * @return A reference to this Client
+     */
     public final Client setHandler(BiConsumer<String, String> handler) {
         this.handler = handler;
         return this;
     }
 
+    /**
+     * Returns a handler, which handles every event coming from a specific
+     * Applet
+     *
+     * @param id Applet ID
+     * @return Handler
+     */
     public final BiConsumer<String, String> getHandler(String id) {
         return handlers.get(id);
     }
 
+    /**
+     * Sets a handler, which handles every event coming from a specific Applet
+     *
+     * @param id Applet ID
+     * @param handler Handler
+     * @return A reference to this Client
+     */
     public final Client addHandler(String id, BiConsumer<String, String> handler) {
         handlers.put(id, handler);
         return this;
     }
 
+    /**
+     * Removes a handler, which handles every event coming from a specific
+     * Applet
+     *
+     * @param id Applet ID
+     * @return Handler
+     */
     public final BiConsumer<String, String> removeHandler(String id) {
         return handlers.remove(id);
     }
 
+    /**
+     * Grabs the newest event
+     *
+     * @param id Applet ID
+     * @return null Reference or the text of the event
+     */
     public final String grabEvent(String id) {
         try {
             final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -142,6 +231,13 @@ public class Client {
         }
     }
 
+    /**
+     * Starts some listeners for some specific Applets
+     *
+     * @param period Time period to check for updates in milliseconds
+     * @param ids Applet IDs
+     * @return <tt>true</tt> if some listeners were started successfully
+     */
     public final boolean start(int period, final String... ids) {
         if (ids == null || ids.length == 0) {
             if (handlers.isEmpty()) {
@@ -156,6 +252,13 @@ public class Client {
         return true;
     }
 
+    /**
+     * Starts a listener for a specific Applet
+     *
+     * @param id Applet ID
+     * @param period Time period to check for updates in milliseconds
+     * @return <tt>true</tt> if the listener was started successfully
+     */
     public final boolean start(final String id, int period) {
         if (timers.get(id) != null) {
             return false;
@@ -187,6 +290,12 @@ public class Client {
         return true;
     }
 
+    /**
+     * Stops a listener for a specific Applet
+     *
+     * @param id Applet ID
+     * @return <tt>true</tt> if the listener was stopped successfully
+     */
     public final boolean stop(String id) {
         final Timer timer = timers.get(id);
         if (timer == null) {
@@ -197,6 +306,11 @@ public class Client {
         return true;
     }
 
+    /**
+     * Stops all listeners
+     *
+     * @return <tt>true</tt> if some listeners were stopped successfully
+     */
     public final boolean stopAll() {
         if (timers.isEmpty()) {
             return false;
@@ -205,6 +319,12 @@ public class Client {
         return true;
     }
 
+    /**
+     * Converts an empty or 'null' containing String to a null Reference
+     *
+     * @param temp Text
+     * @return Converted text
+     */
     protected static final String convertNullToNull(String temp) {
         return temp == null ? null : ((temp.equals("" + null) || temp.isEmpty()) ? null : temp);
     }

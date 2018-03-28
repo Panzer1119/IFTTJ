@@ -26,7 +26,7 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 /**
- * Server
+ * IFTTJ Server
  *
  * @author Paul Hagedorn (Panzer1119)
  */
@@ -39,23 +39,50 @@ public class Server {
     private HttpServer server = null;
     private BiFunction<InetSocketAddress, String, Map.Entry<Integer, String>> handler = (inetSocketAddress, input) -> new AbstractMap.SimpleEntry<>(200, input);
 
+    /**
+     * Constructs a new Server for IFTTT POSTs and IFTTJ Clients
+     *
+     * @param port Port to listen for
+     */
     public Server(int port) {
         this.port = port;
     }
 
+    /**
+     * Returns the port
+     *
+     * @return Port to listen for
+     */
     public final int getPort() {
         return port;
     }
 
+    /**
+     * Returns the handler for IFTTT events
+     *
+     * @return IFTTT event handler
+     */
     public final BiFunction<InetSocketAddress, String, Map.Entry<Integer, String>> getHandler() {
         return handler;
     }
 
+    /**
+     * Sets the handler for IFTTT events
+     *
+     * @param handler IFTTT event handler
+     * @return A reference to this Server
+     */
     public final Server setHandler(BiFunction<InetSocketAddress, String, Map.Entry<Integer, String>> handler) {
         this.handler = handler;
         return this;
     }
 
+    /**
+     * Starts the Server
+     *
+     * @param async Starts the Server in another Thread
+     * @return <tt>true</tt> if the Server was started successfully
+     */
     public final boolean start(boolean async) {
         if (thread != null || server != null) {
             return false;
@@ -96,6 +123,12 @@ public class Server {
         return true;
     }
 
+    /**
+     * Stops the Server
+     *
+     * @param async Stops the Server in another Thread
+     * @return <tt>true</tt> if the Server was stopped successfully
+     */
     public final boolean stop(boolean async) {
         if (thread == null && server == null) {
             return false;

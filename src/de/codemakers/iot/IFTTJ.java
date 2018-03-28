@@ -54,6 +54,13 @@ public class IFTTJ {
     public static final Map<String, Queue<String>> EVENTS = new ConcurrentHashMap<>();
     private static boolean DEBUG = false;
 
+    /**
+     * Main method, which contains helpfull Information, when the JAR is started
+     * lonely
+     *
+     * @param args Arguments (Port and Debug mode)
+     * @throws Exception Exception
+     */
     public static void main(String[] args) throws Exception {
         if (INET_ADDRESS_OUT == null) {
             System.err.println("Maybe you have no internet connection? Program stopped!");
@@ -213,6 +220,13 @@ public class IFTTJ {
         };
     }
 
+    /**
+     * First set your IFTTT Webhook Key with 'IFTTJ.KEY = "Your Key";'
+     *
+     * @param event Event name
+     * @param values Optionally up to 3 values
+     * @return <tt>true</tt> if the Applet was successfully triggered
+     */
     public static final boolean trigger(String event, Object... values) {
         try {
             final CloseableHttpClient client = HttpClients.createDefault();

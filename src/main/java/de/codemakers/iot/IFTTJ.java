@@ -15,6 +15,12 @@
  */
 package de.codemakers.iot;
 
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
@@ -28,11 +34,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 
 /**
  * If This Than Java (IFTTT for Java)
@@ -40,7 +41,7 @@ import org.apache.http.impl.client.HttpClients;
  * @author Paul Hagedorn
  */
 public class IFTTJ {
-
+    
     public static final String IFTTT_TRIGGER_ENDPOINT = "https://maker.ifttt.com/trigger/%s/with/key/%s";
     public static String KEY = null;
     public static long MAX_EVENT_TIME = 5000;
@@ -55,12 +56,13 @@ public class IFTTJ {
     public static final Map<String, LinkedList<Map.Entry<Long, String>>> EVENTS = new ConcurrentHashMap<>();
     public static final Map<InetSocketAddress, Long> CLIENTS_LAST_UPDATE_TIMES = new ConcurrentHashMap<>();
     private static boolean DEBUG = false;
-
+    
     /**
      * Main method, which contains helpfull Information, when the JAR is started
      * lonely
      *
      * @param args Arguments (Port and Debug mode)
+     *
      * @throws Exception Exception
      */
     public static void main(String[] args) throws Exception {
@@ -100,11 +102,7 @@ public class IFTTJ {
         System.out.println("The Client can automatically monitor every registered Handler or just the ones you want to be monitored.");
         System.out.println("---------------------------------------------------------------------");
         System.out.println("Example Code:");
-        System.out.printf("    final Client client = new Client(\"%1$s\", %2$d); //Creates a new Client, which connects to %1$s:%2$d\n"
-                + "    client.addHandler(\"{APPLET ID}\", (id, event) -> {\n"
-                + "        System.out.println(\"Do Something\");\n"
-                + "    }); //Adds a handler that listens for {APPLET ID}\n"
-                + "    client.start(500); //Starts the client and checks every 500ms for updates\n", INET_ADDRESS_OUT, port);
+        System.out.printf("    final Client client = new Client(\"%1$s\", %2$d); //Creates a new Client, which connects to %1$s:%2$d\n" + "    client.addHandler(\"{APPLET ID}\", (id, event) -> {\n" + "        System.out.println(\"Do Something\");\n" + "    }); //Adds a handler that listens for {APPLET ID}\n" + "    client.start(500); //Starts the client and checks every 500ms for updates\n", INET_ADDRESS_OUT, port);
         System.out.println("-------------------------------------------------------------------------------------------------------------------------------------------");
         System.out.println("You can stop the server by typing 'stop' or 'shutdown'.");
         System.out.println("You can start the server by typing 'start' or 'boot'.");
@@ -181,7 +179,7 @@ public class IFTTJ {
             }
         }).start();
     }
-
+    
     private static final String getOutInetAddress() {
         try {
             final URL url = new URL("http://checkip.amazonaws.com");
@@ -194,19 +192,19 @@ public class IFTTJ {
         }
         return null;
     }
-
+    
     private static final Map.Entry<Long, String> getEvent(LinkedList<Map.Entry<Long, String>> events, long lastUpdateTime) {
         return events.stream().filter((event) -> event.getKey() > lastUpdateTime).findFirst().orElse(EMPTY_EVENT);
     }
-
+    
     private static final void clearOldData(LinkedList<Map.Entry<Long, String>> events, long now) {
         events.removeIf((event) -> (now - event.getKey()) >= MAX_EVENT_TIME);
         CLIENTS_LAST_UPDATE_TIMES.entrySet().removeIf((entry) -> (now - entry.getValue()) >= MAX_CLIENT_AFK_TIME);
     }
-
+    
     private static final LinkedList<Map.Entry<Long, String>> newLinkedList(final int maxSize) {
         return new LinkedList<Map.Entry<Long, String>>() {
-
+            
             @Override
             public final boolean addAll(Collection<? extends Map.Entry<Long, String>> c) {
                 if (c != null) {
@@ -214,7 +212,7 @@ public class IFTTJ {
                 }
                 return c != null;
             }
-
+            
             @Override
             public final boolean add(Map.Entry<Long, String> e) {
                 if (size() >= maxSize) {
@@ -222,20 +220,21 @@ public class IFTTJ {
                 }
                 return super.add(e);
             }
-
+            
             @Override
             public final String toString() {
                 return stream().map(Object::toString).collect(Collectors.joining("#"));
             }
-
+            
         };
     }
-
+    
     /**
      * First set your IFTTT Webhook Key with 'IFTTJ.KEY = "Your Key";'
      *
      * @param event Event name
      * @param values Optionally up to 3 values
+     *
      * @return <tt>true</tt> if the Applet was successfully triggered
      */
     public static final boolean trigger(String event, Object... values) {
@@ -257,9 +256,9 @@ public class IFTTJ {
             return false;
         }
     }
-
+    
     private static final String toJSON(Object... values) {
         return IntStream.range(0, values.length).boxed().collect(Collectors.toMap((i) -> "value" + (i + 1), (i) -> values[i])).entrySet().stream().map((entry) -> "\"" + entry.getKey() + "\":\"" + entry.getValue() + "\"").collect(Collectors.joining(",", "{", "}"));
     }
-
+    
 }

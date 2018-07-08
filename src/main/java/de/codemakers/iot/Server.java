@@ -16,6 +16,7 @@
 package de.codemakers.iot;
 
 import com.sun.net.httpserver.HttpServer;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -31,14 +32,14 @@ import java.util.stream.Collectors;
  * @author Paul Hagedorn (Panzer1119)
  */
 public class Server {
-
+    
     private static final Map.Entry<Integer, String> STANDARD_RESPONSE = new AbstractMap.SimpleEntry<>(200, "");
-
+    
     private final int port;
     private Thread thread = null;
     private HttpServer server = null;
     private BiFunction<InetSocketAddress, String, Map.Entry<Integer, String>> handler = (inetSocketAddress, input) -> new AbstractMap.SimpleEntry<>(200, input);
-
+    
     /**
      * Constructs a new Server for IFTTT POSTs and IFTTJ Clients
      *
@@ -47,7 +48,7 @@ public class Server {
     public Server(int port) {
         this.port = port;
     }
-
+    
     /**
      * Returns the port
      *
@@ -56,7 +57,7 @@ public class Server {
     public final int getPort() {
         return port;
     }
-
+    
     /**
      * Returns the handler for IFTTT events
      *
@@ -65,22 +66,24 @@ public class Server {
     public final BiFunction<InetSocketAddress, String, Map.Entry<Integer, String>> getHandler() {
         return handler;
     }
-
+    
     /**
      * Sets the handler for IFTTT events
      *
      * @param handler IFTTT event handler
+     *
      * @return A reference to this Server
      */
     public final Server setHandler(BiFunction<InetSocketAddress, String, Map.Entry<Integer, String>> handler) {
         this.handler = handler;
         return this;
     }
-
+    
     /**
      * Starts the Server
      *
      * @param async Starts the Server in another Thread
+     *
      * @return <tt>true</tt> if the Server was started successfully
      */
     public final boolean start(boolean async) {
@@ -122,11 +125,12 @@ public class Server {
         }
         return true;
     }
-
+    
     /**
      * Stops the Server
      *
      * @param async Stops the Server in another Thread
+     *
      * @return <tt>true</tt> if the Server was stopped successfully
      */
     public final boolean stop(boolean async) {
@@ -154,5 +158,5 @@ public class Server {
         }
         return true;
     }
-
+    
 }

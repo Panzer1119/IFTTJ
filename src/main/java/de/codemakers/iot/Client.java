@@ -32,9 +32,9 @@ import java.util.function.BiConsumer;
  * @author Paul Hagedorn (Panzer1119)
  */
 public class Client {
-
+    
     public static final int SLEEP_TIME_AFTER_EVENT = 10;
-
+    
     private String ip;
     private int port;
     private String url_suffix;
@@ -42,7 +42,7 @@ public class Client {
     private final Map<String, Timer> timers = new ConcurrentHashMap<>();
     private BiConsumer<String, String> handler = null;
     private final Map<String, BiConsumer<String, String>> handlers = new ConcurrentHashMap<>();
-
+    
     /**
      * Constructs a new Server for IFTTT POSTs and IFTTJ Clients
      *
@@ -52,7 +52,7 @@ public class Client {
     public Client(String ip, int port) {
         this(ip, port, IFTTJ.URL_SUFFIX);
     }
-
+    
     /**
      * Constructs a new Server for IFTTT POSTs and IFTTJ Clients
      *
@@ -66,7 +66,7 @@ public class Client {
         this.url_suffix = url_suffix;
         update();
     }
-
+    
     /**
      * Returns the IP Address to connect to
      *
@@ -75,11 +75,12 @@ public class Client {
     public final String getIP() {
         return ip;
     }
-
+    
     /**
      * Sets the IP Address to connect to
      *
      * @param ip IP Address
+     *
      * @return A reference to this Client
      */
     public final Client setIP(String ip) {
@@ -87,7 +88,7 @@ public class Client {
         update();
         return this;
     }
-
+    
     /**
      * Returns the Port to connect to
      *
@@ -96,11 +97,12 @@ public class Client {
     public final int getPort() {
         return port;
     }
-
+    
     /**
      * Sets the Port to connect to
      *
      * @param port Port
+     *
      * @return A reference to this Client
      */
     public final Client setPort(int port) {
@@ -108,7 +110,7 @@ public class Client {
         update();
         return this;
     }
-
+    
     /**
      * Returns the URL Suffix after "http://ip:port/"
      *
@@ -117,11 +119,12 @@ public class Client {
     public final String getURLSuffix() {
         return url_suffix;
     }
-
+    
     /**
      * Sets the URL Suffix after "http://ip:port/"
      *
      * @param url_suffix URL suffix
+     *
      * @return A reference to this Client
      */
     public final Client setURLSuffix(String url_suffix) {
@@ -129,7 +132,7 @@ public class Client {
         update();
         return this;
     }
-
+    
     /**
      * Returns the URL Object
      *
@@ -138,7 +141,7 @@ public class Client {
     public final URL getURL() {
         return url;
     }
-
+    
     private final void update() {
         try {
             url = new URL(String.format("http://%s:%d/%s", ip, port, url_suffix));
@@ -146,7 +149,19 @@ public class Client {
             ex.printStackTrace();
         }
     }
-
+    
+    /**
+     * Sets the handler, which handles every event coming from IFTTT
+     *
+     * @param handler Main handler
+     *
+     * @return A reference to this Client
+     */
+    public final Client setHandler(BiConsumer<String, String> handler) {
+        this.handler = handler;
+        return this;
+    }
+    
     /**
      * Returns the handler, which handles every event coming from IFTTT
      *
@@ -155,56 +170,49 @@ public class Client {
     public final BiConsumer<String, String> getHandler() {
         return handler;
     }
-
-    /**
-     * Sets the handler, which handles every event coming from IFTTT
-     *
-     * @param handler Main handler
-     * @return A reference to this Client
-     */
-    public final Client setHandler(BiConsumer<String, String> handler) {
-        this.handler = handler;
-        return this;
-    }
-
+    
     /**
      * Returns a handler, which handles every event coming from a specific
      * Applet
      *
      * @param id Applet ID
+     *
      * @return Handler
      */
     public final BiConsumer<String, String> getHandler(String id) {
         return handlers.get(id);
     }
-
+    
     /**
      * Sets a handler, which handles every event coming from a specific Applet
      *
      * @param id Applet ID
      * @param handler Handler
+     *
      * @return A reference to this Client
      */
     public final Client addHandler(String id, BiConsumer<String, String> handler) {
         handlers.put(id, handler);
         return this;
     }
-
+    
     /**
      * Removes a handler, which handles every event coming from a specific
      * Applet
      *
      * @param id Applet ID
+     *
      * @return Handler
      */
     public final BiConsumer<String, String> removeHandler(String id) {
         return handlers.remove(id);
     }
-
+    
     /**
      * Grabs the newest event
      *
      * @param id Applet ID
+     *
      * @return null Reference or the text of the event
      */
     public final String grabEvent(String id) {
@@ -230,12 +238,13 @@ public class Client {
             return null;
         }
     }
-
+    
     /**
      * Starts some listeners for some specific Applets
      *
      * @param period Time period to check for updates in milliseconds
      * @param ids Applet IDs
+     *
      * @return <tt>true</tt> if some listeners were started successfully
      */
     public final boolean start(int period, final String... ids) {
@@ -251,12 +260,13 @@ public class Client {
         }
         return true;
     }
-
+    
     /**
      * Starts a listener for a specific Applet
      *
      * @param id Applet ID
      * @param period Time period to check for updates in milliseconds
+     *
      * @return <tt>true</tt> if the listener was started successfully
      */
     public final boolean start(final String id, int period) {
@@ -289,11 +299,12 @@ public class Client {
         timers.put(id, timer);
         return true;
     }
-
+    
     /**
      * Stops a listener for a specific Applet
      *
      * @param id Applet ID
+     *
      * @return <tt>true</tt> if the listener was stopped successfully
      */
     public final boolean stop(String id) {
@@ -305,7 +316,7 @@ public class Client {
         timers.remove(id);
         return true;
     }
-
+    
     /**
      * Stops all listeners
      *
@@ -318,15 +329,16 @@ public class Client {
         timers.keySet().forEach(this::stop);
         return true;
     }
-
+    
     /**
      * Converts an empty or 'null' containing String to a null Reference
      *
      * @param temp Text
+     *
      * @return Converted text
      */
     protected static final String convertNullToNull(String temp) {
         return temp == null ? null : ((temp.equals("" + null) || temp.isEmpty()) ? null : temp);
     }
-
+    
 }

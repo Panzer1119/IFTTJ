@@ -180,7 +180,7 @@ public class IFTTJ {
         }).start();
     }
     
-    private static final String getOutInetAddress() {
+    public static final String getOutInetAddress() {
         try {
             final URL url = new URL("http://checkip.amazonaws.com");
             final BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
